@@ -4,14 +4,14 @@ import (
 	"log"
 
 	gofs "github.com/craimbault/go-fs"
-	"github.com/craimbault/go-fs/internal/backend/s3"
+	"github.com/craimbault/go-fs/pkg/backend/gofsbcks3"
 	"github.com/rs/zerolog"
 )
 
 func main() {
 
 	// On initialise la config
-	config := s3.S3Config{
+	config := gofsbcks3.S3Config{
 		Endpoint:        "localhost:9000",
 		Region:          "us-east-1",
 		AccessKeyID:     "minioaccesskey",

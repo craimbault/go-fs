@@ -4,14 +4,14 @@ import (
 	"log"
 
 	gofs "github.com/craimbault/go-fs"
-	"github.com/craimbault/go-fs/internal/backend/local"
+	"github.com/craimbault/go-fs/pkg/backend/gofsbcklocal"
 	"github.com/rs/zerolog"
 )
 
 func main() {
 
 	// On initialise la config
-	config := local.LocalConfig{
+	config := gofsbcklocal.LocalConfig{
 		BasePath: "/tmp/gosf-data",
 		Debug:    true,
 	}

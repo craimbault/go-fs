@@ -1,4 +1,4 @@
-package local
+package gofsbcklocal
 
 import (
 	"errors"
@@ -11,6 +11,8 @@ import (
 	"github.com/craimbault/go-fs/internal/backend"
 	"github.com/rs/zerolog/log"
 )
+
+const BACKEND_NAME = "local"
 
 type LocalConfig struct {
 	BasePath string

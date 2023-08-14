@@ -1,4 +1,4 @@
-package s3
+package gofsbcks3
 
 import (
 	"bytes"
@@ -11,6 +11,8 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/rs/zerolog/log"
 )
+
+const BACKEND_NAME = "s3"
 
 type S3Config struct {
 	Endpoint        string

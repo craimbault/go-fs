@@ -4,15 +4,15 @@ import (
 	"errors"
 
 	"github.com/craimbault/go-fs/internal/backend"
-	"github.com/craimbault/go-fs/internal/backend/local"
-	"github.com/craimbault/go-fs/internal/backend/s3"
+	"github.com/craimbault/go-fs/pkg/backend/gofsbcklocal"
+	"github.com/craimbault/go-fs/pkg/backend/gofsbcks3"
 )
 
 type GoFSBackendType string
 
 const (
-	BACKEND_TYPE_LOCAL GoFSBackendType = "local"
-	BACKEND_TYPE_S3    GoFSBackendType = "s3"
+	BACKEND_TYPE_LOCAL GoFSBackendType = gofsbcklocal.BACKEND_NAME
+	BACKEND_TYPE_S3    GoFSBackendType = gofsbcks3.BACKEND_NAME
 )
 
 type GoFS struct {
@@ -30,17 +30,17 @@ func New(backendType GoFSBackendType, backendConfig interface{}) (GoFS, error) {
 	// En fonction du type de backend
 	switch backendType {
 	case BACKEND_TYPE_LOCAL:
-		config, ok := backendConfig.(local.LocalConfig)
+		config, ok := backendConfig.(gofsbcklocal.LocalConfig)
 		if !ok {
-			return gofs, errors.New("s3 config is not valid")
+			return gofs, errors.New(string(BACKEND_TYPE_LOCAL) + " config is not valid")
 		}
-		gofs.b, err = local.New(config)
+		gofs.b, err = gofsbcklocal.New(config)
 	case BACKEND_TYPE_S3:
-		config, ok := backendConfig.(s3.S3Config)
+		config, ok := backendConfig.(gofsbcks3.S3Config)
 		if !ok {
-			return gofs, errors.New("s3 config is not valid")
+			return gofs, errors.New(string(BACKEND_TYPE_LOCAL) + " config is not valid")
 		}
-		gofs.b, err = s3.New(config)
+		gofs.b, err = gofsbcks3.New(config)
 	default:
 		return gofs, errors.New("unknown backend type")
 	}
