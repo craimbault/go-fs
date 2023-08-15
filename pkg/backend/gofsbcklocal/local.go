@@ -3,6 +3,7 @@ package gofsbcklocal
 import (
 	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -97,7 +98,7 @@ func (b *LocalBackend) Stat(filePath string) (backend.FileInfo, error) {
 	infos, err := os.Stat(prefixedFilePath)
 
 	// Si le fichier n'existe pas
-	if os.IsNotExist(err) {
+	if os.IsNotExist(err) || errors.Is(err, fs.ErrNotExist) {
 		return fInfo, errors.New("filepath does not exists")
 	}
 
