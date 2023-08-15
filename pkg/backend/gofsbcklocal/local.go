@@ -97,7 +97,7 @@ func (b *LocalBackend) Stat(filePath string) (backend.FileInfo, error) {
 	infos, err := os.Stat(prefixedFilePath)
 
 	// Si le fichier n'existe pas
-	if err == os.ErrNotExist {
+	if os.IsNotExist(err) {
 		return fInfo, errors.New("filepath does not exists")
 	}
 
