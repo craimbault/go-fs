@@ -3,7 +3,6 @@ package gofsbcklocal
 import (
 	"errors"
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -98,8 +97,10 @@ func (b *LocalBackend) Stat(filePath string) (backend.FileInfo, error) {
 	infos, err := os.Stat(prefixedFilePath)
 
 	// Si le fichier n'existe pas
-	if os.IsNotExist(err) || errors.Is(err, fs.ErrNotExist) {
+	if _, hasError := err.(*os.PathError); hasError {
 		return fInfo, errors.New("filepath does not exists")
+	} else if err != nil {
+		return fInfo, errors.New("fs stat error : " + err.Error())
 	}
 
 	// On les ajoute au retour
@@ -198,21 +199,8 @@ func (b *LocalBackend) Write(filePath string, data []byte) error {
 		createFolder(dirPath)
 	}
 
-	// On ouvre le fichier en ecriture
-	fd, err := os.OpenFile(prefixedFilePath, os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-	defer fd.Close()
-
 	// On ecrit le fichier
-	_, err = fd.Write(data)
-	if err != nil {
-		return err
-	}
-
-	// Tout est OK
-	return nil
+	return os.WriteFile(prefixedFilePath, data, 0644)
 }
 
 func (b *LocalBackend) WriteString(filePath string, content string) error {
