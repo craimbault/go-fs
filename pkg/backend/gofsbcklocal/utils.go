@@ -4,6 +4,8 @@ import (
 	"mime"
 	"os"
 	"path/filepath"
+
+	"gopkg.in/ini.v1"
 )
 
 const DEFAULT_MIME_TYPE = "application/octet-stream"
@@ -47,4 +49,11 @@ func pathMustExists(path string) bool {
 
 func addPrefixedPath(b *LocalBackend, path string) string {
 	return b.Config.BasePath + string(os.PathSeparator) + path
+}
+
+func NewConfigFromIniSection(section *ini.Section) LocalConfig {
+	return LocalConfig{
+		BasePath: section.Key("base_path").MustString(""),
+		Debug:    section.Key("debug").MustBool(false),
+	}
 }
