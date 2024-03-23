@@ -1,0 +1,3 @@
+bin/
+cmd/libgofs/build/
+cmd/libgofs/libgofs.h
