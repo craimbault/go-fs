@@ -1,37 +1,35 @@
 package main
 
 import (
+	"context"
 	"log"
+	"path"
 
-	gofs "github.com/craimbault/go-fs"
-	"github.com/craimbault/go-fs/pkg/backend/gofsbcks3"
+	"github.com/craimbault/go-fs/pkg/gofs"
+	"github.com/craimbault/go-fs/pkg/gofss3"
 	"github.com/rs/zerolog"
 )
 
 func main() {
 
 	// On initialise la config
-	config := gofsbcks3.S3Config{
-		Endpoint:        "localhost:9000",
-		Region:          "us-east-1",
-		AccessKeyID:     "minioaccesskey",
-		SecretAccessKey: "miniosecretkey",
-		UseSSL:          false,
-		BucketName:      "gofs-test",
-		PathPrefix:      "test/",
-		Debug:           true,
+	config := gofss3.S3BackendOptions{
+		Endpoint:  "localhost:9000",
+		Region:    "us-east-1",
+		AccessKey: "minioaccesskey",
+		SecretKey: "miniosecretkey",
+		UseSsl:    false,
+		Bucket:    "gofs-test",
+		Prefix:    "test/",
 	}
 
 	// On indique le niveau de log
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	if config.Debug {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	}
-
 	log.Println("Initializing backend ...")
 
 	// On initalise le backend
-	goFS, err := gofs.New(gofs.BACKEND_TYPE_S3, config)
+	ctx := context.Background()
+	goFS, err := gofss3.NewS3Backend(config)
 	if err != nil {
 		log.Fatal("GOSF Backend initialization error : " + err.Error())
 	}
@@ -39,74 +37,74 @@ func main() {
 
 	// On va creer des fichiers avec contenu
 	log.Println("Writing multiple files ...")
-	filesToWrite := map[string]string{
-		"file1.txt":                            "Fichier 1 dans le dossier racine",
-		"file2.txt":                            "Fichier 2 dans le dossier racine",
-		"subfolder1/sf1_file1.txt":             "Fichier 1 dans le sous dossier 1",
-		"subfolder1/sf1_file2.txt":             "Fichier 2 dans le sous dossier 1",
-		"subfolder1/ssf1.1/sf1_ssf1_file1.txt": "Fichier 1 dans le sous sous dossier 1 du sous dossier 1",
+	filesToWrite := []gofs.FileBytes{
+		gofs.NewFileBytesFromFullFilePath("file1.txt", []byte("Fichier 1 dans le dossier racine")),
+		gofs.NewFileBytesFromFullFilePath("file2.txt", []byte("Fichier 2 dans le dossier racine")),
+		gofs.NewFileBytesFromFullFilePath("subfolder1/sf1_file1.txt", []byte("Fichier 1 dans le sous dossier 1")),
+		gofs.NewFileBytesFromFullFilePath("subfolder1/sf1_file2.txt", []byte("Fichier 2 dans le sous dossier 1")),
+		gofs.NewFileBytesFromFullFilePath("subfolder1/ssf1.1/sf1_ssf1_file1.txt", []byte("Fichier 1 dans le sous sous dossier 1 du sous dossier 1")),
 	}
-	for filePath, fileContent := range filesToWrite {
-		log.Printf("\t Writing file : %s\n", filePath)
-		err := goFS.WriteString(filePath, fileContent)
+	for _, fileBytes := range filesToWrite {
+		log.Printf("\t Writing file : %s\n", fileBytes.GetFullPath())
+		err := goFS.Write(ctx, fileBytes)
 		if err != nil {
-			log.Printf("\t ERROR File not writed : " + err.Error() + "\n")
+			log.Printf("\t\t File write error : %s\n", err.Error())
 		} else {
-			log.Printf("\t File writed with success\n")
+			log.Printf("\t\t File writed with success\n")
 		}
 	}
 	log.Println("Files writing end")
 
 	// On va lister tous les fichiers en reccursif
 	log.Println("Listing all files recursively ...")
-	currentFiles, err := goFS.List("", true)
+	files, err := goFS.List(ctx, "", gofs.FLAG__RECURSIVE)
 	if err != nil {
 		log.Fatal("Unable to list files : " + err.Error())
 	}
-	for _, filePath := range currentFiles {
-		log.Printf("\t %s\n", filePath)
+	for _, file := range files {
+		log.Printf("\t %s\n", file.GetFullPath())
 	}
 	log.Println("Files listing end")
 
-	if len(currentFiles) > 0 {
+	if len(files) > 0 {
 		// On va faire un stat sur le premier fichier trouve
 		log.Println("Getting stats of the first file ...")
-		fileStat, err := goFS.Stat(currentFiles[0])
+		err := goFS.Stat(ctx, &files[0])
 		if err != nil {
-			log.Fatal("Unable to stat file[" + currentFiles[0] + "] : " + err.Error())
+			log.Fatal("Unable to stat file[" + files[0].GetFullPath() + "] : " + err.Error())
 		}
 		log.Printf(
-			"\t Stats : LastModified[%s] Etag[%s] ContentType[%s] Size[%d]\n",
-			fileStat.LastModified,
-			fileStat.ETag,
-			fileStat.ContentType,
-			fileStat.Size,
+			"\t Stats : LastModified[%s] ContentType[%s] Size[%d]\n",
+			files[0].LastModified,
+			files[0].ContentType,
+			files[0].Size,
 		)
 		log.Println("File stat end")
 
 		// On va deplacer le premier fichier
 		newFilename := "new_file_moved.txt"
+		dstFile := gofs.NewFileFromFullFilePath(path.Join(files[0].Path, newFilename), 0, nil)
 		log.Println("Moving the first file to another location ...")
-		err = goFS.Move(currentFiles[0], newFilename)
+		err = goFS.Move(ctx, files[0], dstFile)
 		if err != nil {
-			log.Fatal("Unable to move file[" + currentFiles[0] + "] : " + err.Error())
+			log.Fatal("Unable to move file[" + files[0].GetFullPath() + "] : " + err.Error())
 		}
 		log.Println("File move end")
 
 		// On va lire le fichier deplace
 		log.Println("Reading the moved file ...")
-		content, err := goFS.ReadString(newFilename)
+		content, err := goFS.Read(ctx, dstFile)
 		if err != nil {
-			log.Fatal("Unable to remove file[" + newFilename + "] : " + err.Error())
+			log.Fatal("Unable to remove file[" + dstFile.GetFullPath() + "] : " + err.Error())
 		}
-		log.Printf("\tFile moved content :\n\n%s\n\n", content)
+		log.Printf("\tFile moved content :\n\n%s\n\n", content.Content)
 		log.Println("File read end")
 
 		// On va supprimer le fichier deplace
 		log.Println("Removing the moved file ...")
-		err = goFS.Delete(newFilename)
+		err = goFS.Delete(ctx, dstFile)
 		if err != nil {
-			log.Fatal("Unable to remove file[" + newFilename + "] : " + err.Error())
+			log.Fatal("Unable to remove file[" + dstFile.GetFullPath() + "] : " + err.Error())
 		}
 		log.Println("File removed")
 	}
