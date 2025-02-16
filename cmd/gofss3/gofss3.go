@@ -76,7 +76,7 @@ func main() {
 		log.Printf(
 			"\t Stats : LastModified[%s] ContentType[%s] Size[%d]\n",
 			files[0].LastModified,
-			files[0].ContentType,
+			*files[0].ContentType,
 			files[0].Size,
 		)
 		log.Println("File stat end")

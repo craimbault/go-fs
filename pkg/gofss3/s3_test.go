@@ -14,6 +14,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	// Check if the S3Backend is compatible with the generic interfaces
+	_ gofs.Backend       = &S3Backend{}
+	_ gofs.ObjectBackend = &S3Backend{}
+)
+
 func TestNewFromUri(t *testing.T) {
 	var (
 		bck gofs.ObjectBackend

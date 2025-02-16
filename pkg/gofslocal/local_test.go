@@ -16,6 +16,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	// Check if the LocalBackend is compatible with the generic interface
+	_ gofs.Backend = &LocalBackend{}
+)
+
 func TestNewLocalBackend(t *testing.T) {
 	t.Run("BasePathExists", func(t *testing.T) {
 		expectedBasePath := "demo"
